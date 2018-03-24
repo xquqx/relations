@@ -2,9 +2,20 @@ from model_params import *
 from entity_pair import *
 import os
 
+class PairFeature:
+    def __init__(self, name, extraction_func):
+        self.name = name
+        self.extraction_func = extraction_func
+
+    def __str__(self):
+        return '<{}: {}>'.format(self.__class__.__name__, self.name)
+
+    def extract(self, pairs, index):
+        return self.extraction_func(pairs, index)
+
 
 def get_pairs(filename, pos_dict=None):
-    pairs = EntityPair.list_from_filename(TRAIN_GOLD_PATH)
+    pairs = EntityPair.list_from_filename(filename)
     if pos_dict:
         for p in pairs:
             doc = pos_dict[p.doc_id]
@@ -40,7 +51,8 @@ def get_pos_from_all():
         docs[doc_id] = get_pos_from_filename(join(POS_DIR, filename))
     return docs
 
-
+# def get_features(pairs, index):
+#
 
 if __name__ == '__main__':
     pos_dict = get_pos_from_all()
