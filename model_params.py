@@ -18,3 +18,10 @@ DEV_RAW_PATH = join(DATA_DIR, 'rel-devset.raw')
 
 TEST_GOLD_PATH = join(DATA_DIR, 'rel-testset.gold')
 TEST_RAW_PATH = join(DATA_DIR, 'rel-testset.raw')
+
+TRAIN_FEATURE_PATH = join('features', 'rel-trainset-features.txt')
+DEV_FEATURE_PATH = join('features', 'rel-devset-features.txt')
+TEST_FEATURE_PATH = join('features', 'rel-testset-features.txt')
+
+DEV_PREDICTIONS_PATH = join('predictions', 'rel-devset.tagged')
+TEST_PREDICTIONS_PATH = join('predictions', 'rel-testset.tagged')

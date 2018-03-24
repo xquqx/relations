@@ -13,6 +13,33 @@ class PairFeature:
     def extract(self, pairs, index):
         return self.extraction_func(pairs, index)
 
+def training_features():
+    features = []
+
+    features.append(PairFeature('relation',
+                                lambda pairs, index: pairs[index].relation))
+
+    features.append(PairFeature('entity1_text',
+                                lambda pairs, index: pairs[index].entity1.text))
+
+    features.append(PairFeature('entity2_text',
+                                lambda pairs, index: pairs[index].entity2.text))
+
+    features.append(PairFeature('entity1_POS',
+                                lambda pairs, index: pairs[index].entity1.pos))
+
+    features.append(PairFeature('entity2_POS',
+                                lambda pairs, index: pairs[index].entity1.pos))
+
+    return features
+
+def write_feature_file(pairs, features, output_filename):
+    with open(output_filename, 'w') as output_file:
+        for i in range(len(pairs)):
+            output_file.write(format_pair_features(pairs, i, features) + '\n')
+
+def format_pair_features(pairs, index, features):
+    return ' '.join(['{}={}'.format(feat.name, feat.extract(pairs, index)) for feat in features])
 
 def get_pairs(filename, pos_dict=None):
     pairs = EntityPair.list_from_filename(filename)
@@ -51,11 +78,17 @@ def get_pos_from_all():
         docs[doc_id] = get_pos_from_filename(join(POS_DIR, filename))
     return docs
 
-# def get_features(pairs, index):
-#
-
 if __name__ == '__main__':
+    training_features = training_features()
+    testing_features = training_features[1:]
+
     pos_dict = get_pos_from_all()
+
     train = get_pairs(TRAIN_GOLD_PATH, pos_dict)
+    write_feature_file(train, training_features, TRAIN_FEATURE_PATH)
+
     dev = get_pairs(DEV_GOLD_PATH, pos_dict)
-    test = get_pairs(TEST_GOLD_PATH, pos_dict)
+    write_feature_file(dev, testing_features, DEV_FEATURE_PATH)
+
+
+    # test = get_pairs(TEST_GOLD_PATH, pos_dict)
