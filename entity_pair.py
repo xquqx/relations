@@ -8,26 +8,28 @@ class Entity:
                  entity_type,
                  relation_id,
                  text,
-                 pos=None):
+                 pos=None,
+                 prev_pos=None):
         self.sent_index = sent_index
         self.start_index = start_index
         self.end_index = end_index
-        self. entity_type = entity_type
+        self.entity_type = entity_type
         self.text = text
         self.pos = pos
+        self.prev_pos = prev_pos
 
 class EntityPair:
     def __init__(self,
                  relation,
                  doc_id,
-                 # sent_index,
                  entity1,
-                 entity2):
+                 entity2,
+                 features=None):
         self.relation = relation
         self.doc_id = doc_id
-        # self.sent_index = sent_index
         self.entity1 = entity1
         self.entity2 = entity2
+        self.features = features
 
     @classmethod
     def from_text_gold(cls, line):
