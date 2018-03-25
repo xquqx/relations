@@ -20,13 +20,19 @@ class PairFeature:
 def features():
     features = [('entity1_text', lambda p, i: p[i].entity1.text),
                 ('entity2_text', lambda p, i: p[i].entity2.text),
+                ('entity1_text_length', lambda p, i: len(p[i].entity1.text)),
+                ('entity2_text_length', lambda p, i: len(p[i].entity2.text)),
+                ('entity1_num_words', lambda p, i: p[i].entity1.end_index - p[i].entity1.start_index),
+                ('entity2_num_words', lambda p, i: p[i].entity2.end_index - p[i].entity2.start_index),
                 ('entity1_POS', lambda p, i: p[i].entity1.pos),
                 ('entity2_POS', lambda p, i: p[i].entity2.pos),
                 ('entity1_type', lambda p, i: p[i].entity1.entity_type),
                 ('entity2_type', lambda p, i: p[i].entity2.entity_type),
-                ('entity1_type', lambda p, i: p[i].entity1.entity_type),
-                ('entity2_type', lambda p, i: p[i].entity2.entity_type),
-                ('distance', lambda p, i: p[i].entity2.start_index - p[i].entity1.end_index)]
+                ('entity1_type2', lambda p, i: p[i].entity1.entity_type),
+                ('entity2_type2', lambda p, i: p[i].entity2.entity_type),
+                ('distance', lambda p, i: p[i].entity2.start_index - p[i].entity1.end_index),
+                ('distance2', lambda p, i: p[i].entity2.start_index - p[i].entity1.end_index),f
+                ]
 
     features = [PairFeature(name, func) for name, func in features]
     return features
