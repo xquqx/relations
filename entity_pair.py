@@ -17,6 +17,7 @@ class Entity:
         self.text = text
         self.pos = pos
         self.prev_pos = prev_pos
+        self.is_country = False
 
 class EntityPair:
     def __init__(self,
@@ -24,12 +25,14 @@ class EntityPair:
                  doc_id,
                  entity1,
                  entity2,
-                 features=None):
+                 features=None,
+                 entity_distance=None):
         self.relation = relation
         self.doc_id = doc_id
         self.entity1 = entity1
         self.entity2 = entity2
         self.features = features
+        self.entity_distance = entity_distance
 
     @classmethod
     def from_text_gold(cls, line):
