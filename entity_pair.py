@@ -26,13 +26,15 @@ class EntityPair:
                  entity1,
                  entity2,
                  features=None,
-                 entity_distance=None):
+                 entity_distance=None,
+                 between_entities_bow=None):
         self.relation = relation
         self.doc_id = doc_id
         self.entity1 = entity1
         self.entity2 = entity2
         self.features = features
         self.entity_distance = entity_distance
+        self.between_entities_bow = between_entities_bow
 
     @classmethod
     def from_text_gold(cls, line):

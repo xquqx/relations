@@ -1,5 +1,6 @@
 from model_params import *
 from entity_pair import *
+from nltk.stem import WordNetLemmatizer
 import os
 import re
 
@@ -24,23 +25,24 @@ def features():
                 ('entity2_text_length', lambda p, i: len(p[i].entity2.text)),
                 ('entity1_num_words', lambda p, i: p[i].entity1.end_index - p[i].entity1.start_index),
                 ('entity2_num_words', lambda p, i: p[i].entity2.end_index - p[i].entity2.start_index),
-                ('entity1_POS', lambda p, i: p[i].entity1.pos),
-                ('entity2_POS', lambda p, i: p[i].entity2.pos),
-                ('entity1_type', lambda p, i: p[i].entity1.entity_type),
-                ('entity2_type', lambda p, i: p[i].entity2.entity_type),
-                ('entity1_type2', lambda p, i: p[i].entity1.entity_type),
-                ('entity2_type2', lambda p, i: p[i].entity2.entity_type),
-                ('entity_types_pair', lambda p, i: p[i].entity1.entity_type+'-'+p[i].entity2.entity_type),
-                ('entity_pos_pair', lambda p, i: p[i].entity1.pos+'-'+p[i].entity2.pos),
-                ('distance', lambda p, i: p[i].entity2.start_index - p[i].entity1.end_index),
-                ('distance2', lambda p, i: p[i].entity2.start_index - p[i].entity1.end_index),
-                ('entity1_in_entity2', lambda p, i: p[i].entity1.text in p[i].entity2.text),
-                ('entity2_in_entity1', lambda p, i: p[i].entity2.text in p[i].entity1.text),
-                ('shared_words', lambda p, i: '_'.join(word for word in p[i].entity1.text.split('_') if word in p[i].entity2.text.split('_'))),
-                ('num_shared_words', lambda p, i: len([word for word in p[i].entity1.text.split('_') if word in p[i].entity2.text.split('_')])),
+                #('entity1_POS', lambda p, i: p[i].entity1.pos),
+                #('entity2_POS', lambda p, i: p[i].entity2.pos),
+                #('entity1_type', lambda p, i: p[i].entity1.entity_type),
+                #('entity2_type', lambda p, i: p[i].entity2.entity_type),
+                #('entity1_type2', lambda p, i: p[i].entity1.entity_type),
+                #('entity2_type2', lambda p, i: p[i].entity2.entity_type),
+                #('entity_types_pair', lambda p, i: p[i].entity1.entity_type+'-'+p[i].entity2.entity_type),
+                #('entity_pos_pair', lambda p, i: p[i].entity1.pos+'-'+p[i].entity2.pos),
+                #('distance', lambda p, i: p[i].entity2.start_index - p[i].entity1.end_index),
+                #('distance2', lambda p, i: p[i].entity2.start_index - p[i].entity1.end_index),
+                #('entity1_in_entity2', lambda p, i: p[i].entity1.text in p[i].entity2.text),
+                #('entity2_in_entity1', lambda p, i: p[i].entity2.text in p[i].entity1.text),
+                #('shared_words', lambda p, i: '_'.join(word for word in p[i].entity1.text.split('_') if word in p[i].entity2.text.split('_'))),
+                #('num_shared_words', lambda p, i: len([word for word in p[i].entity1.text.split('_') if word in p[i].entity2.text.split('_')])),
                 #('entities_between_pair', lambda p, i: p[i].entity_distance),
                 #('e1_is_country', lambda p, i: p[i].entity2.entity_type if p[i].entity1.is_country else ''),
                 #('e2_is_country', lambda p, i: p[i].entity1.entity_type if p[i].entity2.is_country else ''),
+                #('between_bow', lambda p, i: p[i].between_entities_bow),
                 ]
 
     features = [PairFeature(name, func) for name, func in features]
@@ -62,7 +64,7 @@ def output_rows(rows, output_filename):
 def format_pair_features(pairs, index, features):
     return FEATURE_SEP.join(['{}={}'.format(feat.name, feat.extract(pairs, index)) for feat in features])
 
-def get_pairs(filename, pos_dict=None, country_list=None, entity_dict=None):
+def get_pairs(filename, pos_dict=None, vocab=None, doc_vocab =None, country_list=None, entity_dict=None):
     pairs = EntityPair.list_from_filename(filename)
     if pos_dict:
         for p in pairs:
@@ -71,6 +73,12 @@ def get_pairs(filename, pos_dict=None, country_list=None, entity_dict=None):
             set_pos_tag(p.entity2, doc)
             set_prev_pos_tag(p.entity1, doc)
             set_prev_pos_tag(p.entity2, doc)
+    if vocab and doc_vocab:
+        print('vocab and doc exist for '+filename)
+        for p in pairs:
+            set_between_BoW(p, get_bow_vector(p,vocab,doc_vocab))
+            if p.between_entities_bow == None:
+                print('\tfailed.')
     if entity_dict:
         for p in pairs:
             set_entity_distance(p,entity_dict)
@@ -79,6 +87,40 @@ def get_pairs(filename, pos_dict=None, country_list=None, entity_dict=None):
             set_is_country(p.entity1, country_list)
             set_is_country(p.entity2, country_list)
     return pairs
+
+def get_bow_vector(p, vocab, doc_vocab):
+    vector = [0] * len(vocab)
+    sent_counter = p.entity1.sent_index
+    final_start_index = p.entity1.end_index
+    while (sent_counter != p.entity2.sent_index):
+        final_start_index = 0
+        if sent_counter == p.entity1.sent_index:
+            word_counter = p.entity1.end_index
+        else:
+            word_counter = 0
+        try:
+            word = doc_vocab[p.doc_id][sent_counter][word_counter]
+            try:
+                index = vocab.index(word)
+                vector[index] = 1
+            except:
+                pass
+        except:
+            sent_counter += 1
+        word_counter += 1
+        
+    for i in range(final_start_index, p.entity2.start_index):
+        try:
+            vector[vocab.index(doc_vocab[p.doc_id][p.entity2.sent_index][i])] = 1
+        except:
+            pass
+    return vector
+
+def set_between_BoW(p, v):
+    v_string = ''
+    for i in v:
+        v_string += str(i)
+    p.between_entities_bow = v_string
 
 def set_is_country(entity, country_list):
     if entity.text in country_list:
@@ -116,10 +158,52 @@ def get_pos_from_filename(filename):
 
 def get_pos_from_all():
     docs = dict()
+    vocab = {}
+    doc_vocab = {}
     for filename in os.listdir(POS_DIR):
         doc_id = filename.strip(POS_SUFFIX)
         docs[doc_id] = get_pos_from_filename(join(POS_DIR, filename))
-    return docs
+        vocab = get_vocab_from_posfile(join(POS_DIR, filename),vocab)
+        doc_vocab[doc_id] = get_ordered_word_list(join(POS_DIR, filename))
+    
+    counter = 1
+    length = len(vocab)
+    shorter_vocab = vocab.keys()
+    while length > 500:
+        shorter_vocab = [v for v in vocab.keys() if vocab[v] > counter]
+        print(str(counter)+": "+str(len(shorter_vocab)))
+        counter += 1
+        length = len(shorter_vocab)
+    return docs,shorter_vocab,doc_vocab
+
+def get_ordered_word_list(filename):
+    wnl = WordNetLemmatizer()
+    file_tokens = {}
+    with open(filename,encoding='utf8') as input_file:
+        sent_count = 0
+        for line in input_file:
+            word_count = 0
+            file_tokens[sent_count] = {}
+            if line.strip('\n') != '':
+                for w_p in line.strip('\n').split(' '):
+                    token = wnl.lemmatize(w_p.split('_')[0].lower().strip('`'))
+                    file_tokens[sent_count][word_count] = token
+                    word_count += 1
+                sent_count += 1
+    return file_tokens
+
+def get_vocab_from_posfile(filename,vocab):
+    wnl = WordNetLemmatizer()
+    with open(filename,encoding='utf8') as input_file:
+        for line in input_file:
+            if line.strip('\n') != '':
+                for w_p in line.strip('\n').split(' '):
+                    token = wnl.lemmatize(w_p.split('_')[0].lower().strip('`'))
+                    try:
+                        vocab[token] += 1
+                    except:
+                        vocab[token] = 1
+    return vocab
 
 def get_ordered_entity_list(filename):
     entities = {}
@@ -150,18 +234,17 @@ def load_countries():
 if __name__ == '__main__':
     features = features()
 
-    pos_dict = get_pos_from_all()
+    pos_dict,vocab,doc_vocab = get_pos_from_all()
     #country_list = load_countries()
 
-
     #entity_dict = get_ordered_entity_list(TRAIN_GOLD_PATH)
-    train = get_pairs(TRAIN_GOLD_PATH, pos_dict)
+    train = get_pairs(TRAIN_GOLD_PATH, pos_dict,vocab,doc_vocab)
     output_rows(format_train_features(train, features), TRAIN_FEATURE_PATH)
 
     #entity_dict = get_ordered_entity_list(DEV_GOLD_PATH)
-    dev = get_pairs(DEV_GOLD_PATH, pos_dict)
+    dev = get_pairs(DEV_GOLD_PATH, pos_dict,vocab,doc_vocab)
     output_rows(format_test_features(dev, features), DEV_FEATURE_PATH)
 
     #entity_dict = get_ordered_entity_list(TEST_GOLD_PATH)
-    test = get_pairs(TEST_GOLD_PATH, pos_dict)
+    test = get_pairs(TEST_GOLD_PATH, pos_dict,vocab,doc_vocab)
     output_rows(format_test_features(test, features), TEST_FEATURE_PATH)
