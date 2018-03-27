@@ -25,24 +25,24 @@ def features():
                 ('entity2_text_length', lambda p, i: len(p[i].entity2.text)),
                 ('entity1_num_words', lambda p, i: p[i].entity1.end_index - p[i].entity1.start_index),
                 ('entity2_num_words', lambda p, i: p[i].entity2.end_index - p[i].entity2.start_index),
-                #('entity1_POS', lambda p, i: p[i].entity1.pos),
-                #('entity2_POS', lambda p, i: p[i].entity2.pos),
-                #('entity1_type', lambda p, i: p[i].entity1.entity_type),
-                #('entity2_type', lambda p, i: p[i].entity2.entity_type),
-                #('entity1_type2', lambda p, i: p[i].entity1.entity_type),
-                #('entity2_type2', lambda p, i: p[i].entity2.entity_type),
-                #('entity_types_pair', lambda p, i: p[i].entity1.entity_type+'-'+p[i].entity2.entity_type),
-                #('entity_pos_pair', lambda p, i: p[i].entity1.pos+'-'+p[i].entity2.pos),
-                #('distance', lambda p, i: p[i].entity2.start_index - p[i].entity1.end_index),
-                #('distance2', lambda p, i: p[i].entity2.start_index - p[i].entity1.end_index),
-                #('entity1_in_entity2', lambda p, i: p[i].entity1.text in p[i].entity2.text),
-                #('entity2_in_entity1', lambda p, i: p[i].entity2.text in p[i].entity1.text),
-                #('shared_words', lambda p, i: '_'.join(word for word in p[i].entity1.text.split('_') if word in p[i].entity2.text.split('_'))),
-                #('num_shared_words', lambda p, i: len([word for word in p[i].entity1.text.split('_') if word in p[i].entity2.text.split('_')])),
+                ('entity1_POS', lambda p, i: p[i].entity1.pos),
+                ('entity2_POS', lambda p, i: p[i].entity2.pos),
+                ('entity1_type', lambda p, i: p[i].entity1.entity_type),
+                ('entity2_type', lambda p, i: p[i].entity2.entity_type),
+                ('entity1_type2', lambda p, i: p[i].entity1.entity_type),
+                ('entity2_type2', lambda p, i: p[i].entity2.entity_type),
+                ('entity_types_pair', lambda p, i: p[i].entity1.entity_type+'-'+p[i].entity2.entity_type),
+                ('entity_pos_pair', lambda p, i: p[i].entity1.pos+'-'+p[i].entity2.pos),
+                ('distance', lambda p, i: p[i].entity2.start_index - p[i].entity1.end_index),
+                ('distance2', lambda p, i: p[i].entity2.start_index - p[i].entity1.end_index),
+                ('entity1_in_entity2', lambda p, i: p[i].entity1.text in p[i].entity2.text),
+                ('entity2_in_entity1', lambda p, i: p[i].entity2.text in p[i].entity1.text),
+                ('shared_words', lambda p, i: '_'.join(word for word in p[i].entity1.text.split('_') if word in p[i].entity2.text.split('_'))),
+                ('num_shared_words', lambda p, i: len([word for word in p[i].entity1.text.split('_') if word in p[i].entity2.text.split('_')])),
                 #('entities_between_pair', lambda p, i: p[i].entity_distance),
                 #('e1_is_country', lambda p, i: p[i].entity2.entity_type if p[i].entity1.is_country else ''),
                 #('e2_is_country', lambda p, i: p[i].entity1.entity_type if p[i].entity2.is_country else ''),
-                #('between_bow', lambda p, i: p[i].between_entities_bow),
+                ('between_bow', lambda p, i: p[i].between_entities_bow),
                 ]
 
     features = [PairFeature(name, func) for name, func in features]
@@ -74,11 +74,11 @@ def get_pairs(filename, pos_dict=None, vocab=None, doc_vocab =None, country_list
             set_prev_pos_tag(p.entity1, doc)
             set_prev_pos_tag(p.entity2, doc)
     if vocab and doc_vocab:
-        print('vocab and doc exist for '+filename)
+        #print('vocab and doc exist for '+filename)
         for p in pairs:
             set_between_BoW(p, get_bow_vector(p,vocab,doc_vocab))
             if p.between_entities_bow == None:
-                print('\tfailed.')
+                #print('\tfailed.')
     if entity_dict:
         for p in pairs:
             set_entity_distance(p,entity_dict)
@@ -171,7 +171,7 @@ def get_pos_from_all():
     shorter_vocab = vocab.keys()
     while length > 500:
         shorter_vocab = [v for v in vocab.keys() if vocab[v] > counter]
-        print(str(counter)+": "+str(len(shorter_vocab)))
+        #print(str(counter)+": "+str(len(shorter_vocab)))
         counter += 1
         length = len(shorter_vocab)
     return docs,shorter_vocab,doc_vocab
@@ -235,16 +235,16 @@ if __name__ == '__main__':
     features = features()
 
     pos_dict,vocab,doc_vocab = get_pos_from_all()
-    #country_list = load_countries()
+    country_list = load_countries()
 
-    #entity_dict = get_ordered_entity_list(TRAIN_GOLD_PATH)
-    train = get_pairs(TRAIN_GOLD_PATH, pos_dict,vocab,doc_vocab)
+    entity_dict = get_ordered_entity_list(TRAIN_GOLD_PATH)
+    train = get_pairs(TRAIN_GOLD_PATH, pos_dict,vocab,doc_vocab,country_list,entity_dict)
     output_rows(format_train_features(train, features), TRAIN_FEATURE_PATH)
 
-    #entity_dict = get_ordered_entity_list(DEV_GOLD_PATH)
-    dev = get_pairs(DEV_GOLD_PATH, pos_dict,vocab,doc_vocab)
+    entity_dict = get_ordered_entity_list(DEV_GOLD_PATH)
+    dev = get_pairs(DEV_GOLD_PATH, pos_dict,vocab,doc_vocab,country_list,entity_dict)
     output_rows(format_test_features(dev, features), DEV_FEATURE_PATH)
 
-    #entity_dict = get_ordered_entity_list(TEST_GOLD_PATH)
-    test = get_pairs(TEST_GOLD_PATH, pos_dict,vocab,doc_vocab)
+    entity_dict = get_ordered_entity_list(TEST_GOLD_PATH)
+    test = get_pairs(TEST_GOLD_PATH, pos_dict,vocab,doc_vocab,country_list,entity_dict)
     output_rows(format_test_features(test, features), TEST_FEATURE_PATH)
